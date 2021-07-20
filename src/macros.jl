@@ -577,6 +577,32 @@ macro subset(x, args...)
     esc(subset_helper(x, args...))
 end
 
+function rsubset_helper(x, args...)
+    exprs, outer_flags = create_args_vector(args...)
+    if outer_flags[Symbol("@byrow")][]
+        throw(ArgumentError("Redundant @byrow calls"))
+    end
+
+    outer_flags[Symbol("@byrow")][] = true
+
+    t = (fun_to_vec(ex; no_dest=true, outer_flags=outer_flags) for ex in exprs)
+    quote
+        $subset($x, $(t...); skipmissing=true)
+    end
+end
+
+
+"""
+    @rsubset(d, i...)
+
+Row-wise version of `@subset`, i.e. all operations use `@byrow` by
+default. See [`@subset`](@ref) for details.
+"""
+macro rsubset(x, args...)
+    esc(rsubset_helper(x, args...))
+end
+
+
 """
     @where(x, args...)
 
@@ -594,6 +620,21 @@ function subset!_helper(x, args...)
         $subset!($x, $(t...); skipmissing=true)
     end
 end
+
+function rsubset!_helper(x, args...)
+    exprs, outer_flags = create_args_vector(args...)
+    if outer_flags[Symbol("@byrow")][] == true
+        throw(ArgumentError("Redundant @byrow calls"))
+    end
+
+    outer_flags[Symbol("@byrow")][] = true
+
+    t = (fun_to_vec(ex; no_dest=true, outer_flags=outer_flags) for ex in exprs)
+    quote
+        $subset!($x, $(t...); skipmissing=true)
+    end
+end
+
 
 """
     @subset!(d, i...)
@@ -734,6 +775,17 @@ julia> @subset!(d, :a .== 1)
 """
 macro subset!(x, args...)
     esc(subset!_helper(x, args...))
+end
+
+
+"""
+    @rsubset!(d, i...)
+
+Row-wise version of `@subset`, i.e. all opertaions use `@byrow` by
+default. See `? @subset` for details.
+"""
+macro rsubset!(x, args...)
+    esc(rsubset!_helper(x, args...))
 end
 
 
@@ -899,6 +951,31 @@ macro orderby(d, args...)
     esc(orderby_helper(d, args...))
 end
 
+function rorderby_helper(x, args...)
+    exprs, outer_flags = create_args_vector(args...)
+    if outer_flags[Symbol("@byrow")][] == true
+        throw(ArgumentError("Redundant @byrow calls"))
+    end
+
+    outer_flags[Symbol("@byrow")][] = true
+
+
+    t = (fun_to_vec(ex; gensym_names = true, outer_flags = outer_flags) for ex in exprs)
+    quote
+        $DataFramesMeta.orderby($x, $(t...))
+    end
+end
+
+"""
+    rorderby(d, args...)
+
+Row-wise version of `@orderby`, i.e. all opertaions use `@byrow` by
+default. See `? @orderby` for details.
+"""
+macro rorderby(d, args...)
+    esc(rorderby_helper(d, args...))
+end
+
 
 ##############################################################################
 ##
@@ -1017,6 +1094,28 @@ macro transform(x, args...)
     esc(transform_helper(x, args...))
 end
 
+function rtransform_helper(x, args...)
+    exprs, outer_flags = create_args_vector(args...)
+    if outer_flags[Symbol("@byrow")][] == true
+        throw(ArgumentError("Redundant @byrow calls"))
+    end
+    outer_flags[Symbol("@byrow")][] = true
+
+    t = (fun_to_vec(ex; gensym_names = false, outer_flags = outer_flags) for ex in exprs)
+    quote
+        $DataFrames.transform($x, $(t...))
+    end
+end
+
+"""
+    @rtransform(x, args...)
+
+Row-wise version of `@transform`, i.e. all opertaions use `@byrow` by
+default. See `? @transform` for details.
+"""
+macro rtransform(x, args...)
+    esc(rtransform_helper(x, args...))
+end
 
 ##############################################################################
 ##
@@ -1111,6 +1210,28 @@ true
 """
 macro transform!(x, args...)
     esc(transform!_helper(x, args...))
+end
+
+function rtransform!_helper(x, args...)
+    exprs, outer_flags = create_args_vector(args...)
+    if outer_flags[Symbol("@byrow")][] == true
+        throw(ArgumentError("Redundant @byrow calls"))
+    end
+    outer_flags[Symbol("@byrow")][] = true
+
+    t = (fun_to_vec(ex; gensym_names = false, outer_flags = outer_flags) for ex in exprs)
+    quote
+        $DataFrames.transform!($x, $(t...))
+    end
+end
+
+"""
+    @rtransform!(x, args...)
+
+Row-wise version of `@transform!`, i.e. all opertaions use `@byrow` by
+default. See `? @transform!` for details."""
+macro rtransform!(x, args...)
+    esc(rtransform_helper(x, args...))
 end
 
 
@@ -1227,6 +1348,28 @@ macro select(x, args...)
     esc(select_helper(x, args...))
 end
 
+function rselect_helper(x, args...)
+    exprs, outer_flags = create_args_vector(args...)
+    if outer_flags[Symbol("@byrow")][] == true
+        throw(ArgumentError("Redundant @byrow calls"))
+    end
+    outer_flags[Symbol("@byrow")][] = true
+
+    t = (fun_to_vec(ex; gensym_names = false, outer_flags = outer_flags) for ex in exprs)
+    quote
+        $DataFrames.select($x, $(t...))
+    end
+end
+
+"""
+    @rselect(x, args...)
+
+Row-wise version of `@select`, i.e. all opertaions use `@byrow` by
+default. See `? @select` for details."""
+macro rselect(x, args...)
+    esc(rselect_helper(x, args...))
+end
+
 
 ##############################################################################
 ##
@@ -1336,6 +1479,27 @@ macro select!(x, args...)
     esc(select!_helper(x, args...))
 end
 
+function rselect!_helper(x, args...)
+    exprs, outer_flags = create_args_vector(args...)
+    if outer_flags[Symbol("@byrow")][] == true
+        throw(ArgumentError("Redundant @byrow calls"))
+    end
+    outer_flags[Symbol("@byrow")][] = true
+
+    t = (fun_to_vec(ex; gensym_names = false, outer_flags = outer_flags) for ex in exprs)
+    quote
+        $DataFrames.select($x, $(t...))
+    end
+end
+
+"""
+    @rselect!(x, args...)
+
+Row-wise version of `@select!`, see `? @select!` for details.
+"""
+macro rselect!(x, args...)
+    esc(rselect_helper(x, args...))
+end
 
 ##############################################################################
 ##
